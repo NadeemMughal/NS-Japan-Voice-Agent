@@ -91,21 +91,21 @@ ${JSON.stringify(out.opportunity, null, 2)}
 
 ${out.contact.tags.map((t) => '- `' + t + '`').join('\n')}
 
-Tags are what make this useful in GoHighLevel: filter smart lists by
-\`nsjapan-voice-lead\`, route by \`interest-*\`, prioritise by \`budget-*\`, and segment by
-\`country-*\`. Leads carrying \`no-email-captured\` need a phone follow-up.
+Every voice lead carries the single tag \`NS Japan Lead\`, so one GoHighLevel smart list
+filtered on it shows them all. Interest, country, budget and stock number live in the
+note; a lead whose note reads \`Email: not given\` needs a phone follow-up.
 
 ## Data quality rules applied on the way in
 
 - The name is split into first and last; a single-word name does not break it.
 - The email is lowercased, and spoken forms like \`name (at) gmail (dot) com\` are
   repaired. An address that still does not look valid is **dropped rather than sent**,
-  and the contact is tagged \`no-email-captured\`.
+  and the note records \`Email: not given\`.
 - The phone is reduced to digits and a leading \`+\`; if the caller gave no number, the
   caller ID is used instead.
 - The destination country is mapped to the ISO-2 code GoHighLevel expects. A country
   that is not in the map is left off the contact rather than guessed, but still appears
-  as a \`country-*\` tag and in the note.
+  in the note.
 - The opportunity name is truncated to 120 characters.
 `;
 

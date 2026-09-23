@@ -60,22 +60,10 @@ const countryIso = /^[A-Za-z]{2}$/.test(countryRaw)
   : COUNTRY_ISO[countryRaw.toLowerCase()] || '';
 
 // ---------------------------------------------------------------- tags
-const slug = (s) => str(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// Every lead carries one tag. Interest, country, budget and stock number are in the note.
 const interest = str(args.interest_type) || 'general_enquiry';
 const budget = Number(args.budget_usd);
-const budgetBand = !Number.isFinite(budget) || budget <= 0
-  ? null
-  : budget < 2000 ? 'budget-under-2k'
-  : budget < 4000 ? 'budget-2k-4k'
-  : budget < 6000 ? 'budget-4k-6k'
-  : budget < 10000 ? 'budget-6k-10k'
-  : 'budget-over-10k';
-
-const tags = ['nsjapan-voice-lead', 'source-retell', 'interest-' + slug(interest)];
-if (countryRaw) tags.push('country-' + slug(countryRaw));
-if (budgetBand) tags.push(budgetBand);
-if (has(args.stock_id)) tags.push('stock-' + slug(args.stock_id));
-if (!email) tags.push('no-email-captured');
+const tags = ['NS Japan Lead'];
 
 // ---------------------------------------------------------------- contact body
 const contact = {

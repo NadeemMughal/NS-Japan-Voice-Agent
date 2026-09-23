@@ -21,12 +21,7 @@ Headers: `Authorization: Bearer <private integration token>`, `Version: 2021-07-
   "name": "James Mwangi Kariuki",
   "source": "Retell Voice Agent",
   "tags": [
-    "nsjapan-voice-lead",
-    "source-retell",
-    "interest-vehicle-in-stock",
-    "country-kenya",
-    "budget-6k-10k",
-    "stock-ns10632"
+    "NS Japan Lead"
   ],
   "email": "james.mwangi@example.com",
   "phone": "+254712345678",
@@ -44,7 +39,7 @@ instead of creating a duplicate.
 
 ```
 NS JAPAN AUTOS - VOICE AGENT LEAD
-Captured: 2026-09-16 12:51 UTC
+Captured: 2026-09-23 08:58 UTC
 
 Name: James Mwangi Kariuki
 Email: james.mwangi@example.com
@@ -85,26 +80,21 @@ blank and the workflow creates just the contact and the note.
 
 ## Tags applied
 
-- `nsjapan-voice-lead`
-- `source-retell`
-- `interest-vehicle-in-stock`
-- `country-kenya`
-- `budget-6k-10k`
-- `stock-ns10632`
+- `NS Japan Lead`
 
-Tags are what make this useful in GoHighLevel: filter smart lists by
-`nsjapan-voice-lead`, route by `interest-*`, prioritise by `budget-*`, and segment by
-`country-*`. Leads carrying `no-email-captured` need a phone follow-up.
+Every voice lead carries the single tag `NS Japan Lead`, so one GoHighLevel smart list
+filtered on it shows them all. Interest, country, budget and stock number live in the
+note; a lead whose note reads `Email: not given` needs a phone follow-up.
 
 ## Data quality rules applied on the way in
 
 - The name is split into first and last; a single-word name does not break it.
 - The email is lowercased, and spoken forms like `name (at) gmail (dot) com` are
   repaired. An address that still does not look valid is **dropped rather than sent**,
-  and the contact is tagged `no-email-captured`.
+  and the note records `Email: not given`.
 - The phone is reduced to digits and a leading `+`; if the caller gave no number, the
   caller ID is used instead.
 - The destination country is mapped to the ISO-2 code GoHighLevel expects. A country
   that is not in the map is left off the contact rather than guessed, but still appears
-  as a `country-*` tag and in the note.
+  in the note.
 - The opportunity name is truncated to 120 characters.

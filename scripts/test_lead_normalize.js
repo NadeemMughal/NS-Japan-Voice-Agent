@@ -66,11 +66,8 @@ check('country mapped to ISO2', r.contact.country === 'KE', r.contact.country);
 check('city carried through', r.contact.city === 'Mombasa', r.contact.city);
 check('locationId injected from Config', r.contact.locationId === 'loc_TEST123');
 check('source set for CRM attribution', r.contact.source === 'Retell Voice Agent');
-check('tagged as a voice lead', r.contact.tags.includes('nsjapan-voice-lead'));
-check('tagged with interest', r.contact.tags.includes('interest-vehicle-in-stock'), r.contact.tags.join(','));
-check('tagged with country', r.contact.tags.includes('country-kenya'));
-check('tagged with budget band', r.contact.tags.includes('budget-6k-10k'), r.contact.tags.join(','));
-check('tagged with stock number', r.contact.tags.includes('stock-ns10632'));
+check('tagged only as NS Japan Lead',
+  r.contact.tags.length === 1 && r.contact.tags[0] === 'NS Japan Lead', r.contact.tags.join(','));
 check('note contains the vehicle interest', /Toyota Alphard/.test(r.note));
 check('note contains the agent notes', /JEVIC/.test(r.note));
 check('note records the Retell call id', /call_abc123/.test(r.note));
@@ -85,7 +82,9 @@ check('spoken "(at)" / "(dot)" email is repaired', r.contact.email === 'ana@yaho
 // Garbage email must not reach the CRM
 r = runNormalize({ full_name: 'Bad Email', email: 'not an email at all', interest_type: 'general_enquiry' });
 check('malformed email is dropped, not sent', r.contact.email === undefined, JSON.stringify(r.contact.email));
-check('missing email is tagged for follow-up', r.contact.tags.includes('no-email-captured'));
+check('missing email still gets only the lead tag',
+  r.contact.tags.length === 1 && r.contact.tags[0] === 'NS Japan Lead', r.contact.tags.join(','));
+check('missing email is recorded in the note', /Email: not given/.test(r.note));
 
 // No phone given - fall back to caller ID
 r = runNormalize(
@@ -109,7 +108,7 @@ check('missing name falls back safely', r.contact.name === 'Unknown caller', r.c
 // Unmapped country must not send a bad ISO code
 r = runNormalize({ full_name: 'X Y', country: 'Wakanda', interest_type: 'general_enquiry' });
 check('unknown country is omitted rather than guessed', r.contact.country === undefined);
-check('unknown country still tagged for the team', r.contact.tags.includes('country-wakanda'));
+check('unknown country still recorded in the note', /Destination country: Wakanda/.test(r.note));
 
 // Already-ISO country
 r = runNormalize({ full_name: 'X Y', country: 'ZA', interest_type: 'general_enquiry' });
@@ -124,7 +123,7 @@ r = runNormalize(
 check('pipeline configured is detected', r.hasPipeline === true);
 check('pipeline + stage carried into opportunity',
   r.opportunity.pipelineId === 'pipe_1' && r.opportunity.pipelineStageId === 'stage_1');
-check('budget over 10k banded correctly', r.contact.tags.includes('budget-over-10k'));
+check('budget over 10k carried into opportunity', r.opportunity.monetaryValue === 12000);
 
 // Auto parts lead
 r = runNormalize({
@@ -133,7 +132,7 @@ r = runNormalize({
   vehicle_interest: 'front bumper for 2009 Honda Fit',
   country: 'Ghana',
 });
-check('auto parts interest tagged', r.contact.tags.includes('interest-auto-parts'));
+check('auto parts interest recorded in the note', /Interest: auto_parts/.test(r.note));
 check('opportunity name describes the request', /front bumper/.test(r.opportunity.name), r.opportunity.name);
 check('Ghana mapped to GH', r.contact.country === 'GH');
 
