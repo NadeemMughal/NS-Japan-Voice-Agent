@@ -186,6 +186,11 @@ check('"Corolla" finds Fielder / Rumion stock',
 r = runFilter({ keyword: 'toyota corolla' });
 check('"corolla" keyword finds Fielder / Rumion stock', r.total_matches > 0, String(r.total_matches));
 
+// Aliases only fill a gap: a model named exactly returns only that model.
+r = runFilter({ make: 'TOYOTA', model: 'PREMIO', limit: 5 });
+check('exact model name is not padded with its twin',
+  r.total_matches > 0 && r.vehicles.every((v) => v.model === 'PREMIO'), r.vehicles.map((v) => v.model).join(','));
+
 // 26. A miss on narrow filters asks for a wider search before sourcing
 r = runFilter({ make: 'LEXUS', model: 'IS', year_min: 2015 });
 check('narrow miss tells the agent to widen the search first',

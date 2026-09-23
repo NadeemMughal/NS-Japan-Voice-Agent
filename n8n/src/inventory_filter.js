@@ -71,9 +71,13 @@ const MODEL_ALIASES = {
   '4runner': ['hiluxsurf'],
   montero: ['pajero'],
 };
-const withAliases = (s) => {
+// Aliases are a fallback: a caller who names a Premio exactly gets Premios, not Allions too.
+const byName = (list, names, fields) =>
+  list.filter((v) => names.some((w) => fields(v).some((f) => f.includes(w))));
+const matchName = (list, s, fields) => {
   const w = squash(s);
-  return [w, ...(MODEL_ALIASES[w] || [])];
+  const direct = byName(list, [w], fields);
+  return direct.length || !MODEL_ALIASES[w] ? direct : byName(list, MODEL_ALIASES[w], fields);
 };
 
 // An exact stock number beats every other filter.
@@ -86,10 +90,7 @@ if (has(args.stock_id)) {
     vehicles = vehicles.filter((v) => squash(v.make).includes(want) || want.includes(squash(v.make)));
   }
   if (has(args.model)) {
-    const wants = withAliases(args.model);
-    vehicles = vehicles.filter((v) =>
-      wants.some((w) => squash(v.model).includes(w) || squash(v.title).includes(w))
-    );
+    vehicles = matchName(vehicles, args.model, (v) => [squash(v.model), squash(v.title)]);
   }
   if (has(args.body_type)) {
     const want = norm(args.body_type);
@@ -113,11 +114,10 @@ if (has(args.stock_id)) {
     vehicles = vehicles.filter((v) => norm(v.steering) === want);
   }
   if (has(args.keyword)) {
-    const words = norm(args.keyword).split(/\s+/).filter((w) => squash(w)).map(withAliases);
-    vehicles = vehicles.filter((v) => {
-      const hay = squash(v.title) + ' ' + squash(v.make) + ' ' + squash(v.model) + ' ' + squash(v.body_type);
-      return words.every((alts) => alts.some((w) => hay.includes(w)));
-    });
+    const hay = (v) => [squash(v.title) + ' ' + squash(v.make) + ' ' + squash(v.model) + ' ' + squash(v.body_type)];
+    for (const word of norm(args.keyword).split(/\s+/).filter((w) => squash(w))) {
+      vehicles = matchName(vehicles, word, hay);
+    }
   }
 }
 

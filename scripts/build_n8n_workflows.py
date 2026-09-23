@@ -126,16 +126,12 @@ def respond_node(name, pos, body_expr):
 
 def http_node(name, pos, url, method="GET", body_expr=None, headers=None,
               use_header_auth=False, on_error=None, timeout_ms=15000,
-              full_response=False, force_json=False):
+              full_response=False):
     params = {
         "method": method,
         "url": url,
         "options": {"timeout": timeout_ms},
     }
-    if force_json:
-        # raw.githubusercontent.com serves .json as text/plain, and n8n's autodetect
-        # then hands back {data: "<string>"} instead of the parsed object.
-        params["options"]["response"] = {"response": {"responseFormat": "json"}}
     if full_response:
         # Keep the status code and body instead of throwing, so a 401 or 422 from the
         # CRM can be reported precisely rather than surfacing as an empty error object.
@@ -200,17 +196,9 @@ def build_inventory():
     nodes = [
         webhook_node("Retell Webhook", [-240, 0], "nsjapan-inventory-search"),
         set_node("Config", [-20, 0], {"inventory_url": DEFAULT_INVENTORY_URL}),
-        http_node(
-            "Fetch Stock Snapshot", [200, 0],
-            "={{ $json.inventory_url }}",
-            # A snapshot host that is down must not take the call down with it;
-            # the filter node turns an empty result into a safe spoken fallback.
-            on_error="continueRegularOutput",
-            # Short, because a caller is waiting in silence. Fetching a static JSON
-            # file takes well under a second when the host is healthy.
-            timeout_ms=8000,
-            force_json=True,
-        ),
+        # Served from a cache in the workflow's static data; see stock_snapshot.js.
+        # If it still fails, the filter node turns the error into a safe spoken fallback.
+        code_node("Fetch Stock Snapshot", [200, 0], read_js("stock_snapshot.js")),
         code_node("Filter Stock", [420, 0], read_js("inventory_filter.js")),
         respond_node("Respond to Retell", [640, 0], "={{ JSON.stringify($json) }}"),
     ]

@@ -1,7 +1,10 @@
 {
-  "knowledge_base_id": "knowledge_base_9ab61ee028e5c168",
-  "last_deploy": "2026-09-17T07:34:03Z",
+  "knowledge_base_id": "knowledge_base_f8243f0dad83d717",
+  "last_deploy": "2026-09-23T09:26:03Z",
   "agent_id": "agent_da722581e2d2316443e7a042d1",
   "llm_id": "llm_6c97acc645b41073d8d5760c0b55",
-  "n8n_ghl_credential_id": "TXUvTD2lowlJ3q1A"
+  "n8n_ghl_credential_id": "TXUvTD2lowlJ3q1A",
+  "test_chat_agent_id": "agent_0792aaf7b978b6de3ee06f562f",
+  "test_mirror_llm_id": "llm_9e7a2f48e78777471cb8ab58faef",
+  "test_mirror_prompt_len": 18249
 }
