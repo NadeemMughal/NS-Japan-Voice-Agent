@@ -12,6 +12,14 @@ try {
 } catch (e) {
   snapshot = {};
 }
+// A text/plain response arrives unparsed as {data: "<json string>"}.
+if (!Array.isArray(snapshot.vehicles) && typeof snapshot.data === 'string') {
+  try {
+    snapshot = JSON.parse(snapshot.data);
+  } catch (e) {
+    snapshot = { error: 'stock snapshot is not valid JSON' };
+  }
+}
 
 // If the snapshot host is unreachable the agent must not improvise a stock list.
 // Tell it plainly what it can and cannot say.
@@ -45,6 +53,28 @@ let vehicles = snapshot.vehicles;
 
 const norm = (s) => String(s === undefined || s === null ? '' : s).trim().toLowerCase();
 const has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
+// Letters and digits only, so "Mercedes-Benz" meets "MERCEDES BENZ" and "E Class" meets "E-CLASS".
+const squash = (s) => norm(s).replace(/[^a-z0-9]/g, '');
+
+// Callers abroad use export names; the site lists Japanese-market names. A caller asking
+// for a "Corolla" wants to hear about the Fielder and Axio, which are Corollas in Japan.
+const MODEL_ALIASES = {
+  corolla: ['fielder', 'axio', 'rumion', 'spacio', 'runx', 'allex'],
+  yaris: ['vitz'],
+  jazz: ['fit'],
+  vellfire: ['alphard'],
+  alphard: ['vellfire'],
+  noah: ['voxy', 'esquire'],
+  voxy: ['noah', 'esquire'],
+  premio: ['allion'],
+  allion: ['premio'],
+  '4runner': ['hiluxsurf'],
+  montero: ['pajero'],
+};
+const withAliases = (s) => {
+  const w = squash(s);
+  return [w, ...(MODEL_ALIASES[w] || [])];
+};
 
 // An exact stock number beats every other filter.
 if (has(args.stock_id)) {
@@ -52,13 +82,13 @@ if (has(args.stock_id)) {
   vehicles = vehicles.filter((v) => norm(v.stock_id).replace(/\s+/g, '') === want);
 } else {
   if (has(args.make)) {
-    const want = norm(args.make);
-    vehicles = vehicles.filter((v) => norm(v.make).includes(want) || want.includes(norm(v.make)));
+    const want = squash(args.make);
+    vehicles = vehicles.filter((v) => squash(v.make).includes(want) || want.includes(squash(v.make)));
   }
   if (has(args.model)) {
-    const want = norm(args.model);
-    vehicles = vehicles.filter(
-      (v) => norm(v.model).includes(want) || norm(v.title).includes(want)
+    const wants = withAliases(args.model);
+    vehicles = vehicles.filter((v) =>
+      wants.some((w) => squash(v.model).includes(w) || squash(v.title).includes(w))
     );
   }
   if (has(args.body_type)) {
@@ -67,7 +97,6 @@ if (has(args.stock_id)) {
       const bt = norm(v.body_type);
       if (bt === want) return true;
       // Tolerate loose phrasing: "minivan" vs "Mini Van / 1 Box", "hatch" vs "HatchBack".
-      const squash = (s) => s.replace(/[^a-z0-9]/g, '');
       return squash(bt).includes(squash(want)) || squash(want).includes(squash(bt));
     });
   }
@@ -84,11 +113,10 @@ if (has(args.stock_id)) {
     vehicles = vehicles.filter((v) => norm(v.steering) === want);
   }
   if (has(args.keyword)) {
-    const want = norm(args.keyword);
-    const words = want.split(/\s+/).filter(Boolean);
+    const words = norm(args.keyword).split(/\s+/).filter((w) => squash(w)).map(withAliases);
     vehicles = vehicles.filter((v) => {
-      const hay = norm(v.title) + ' ' + norm(v.make) + ' ' + norm(v.model) + ' ' + norm(v.body_type);
-      return words.every((w) => hay.includes(w));
+      const hay = squash(v.title) + ' ' + squash(v.make) + ' ' + squash(v.model) + ' ' + squash(v.body_type);
+      return words.every((alts) => alts.some((w) => hay.includes(w)));
     });
   }
 }
@@ -147,7 +175,18 @@ const results = vehicles.slice(0, limit).map((v) => ({
 const usd = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
 let spoken;
-if (totalMatches === 0) {
+// Which narrowing filters the agent sent, so a miss can say what to relax.
+const narrowing = ['model', 'keyword', 'body_type', 'transmission', 'fuel', 'steering',
+  'price_min', 'price_max', 'year_min', 'year_max'].filter((k) => has(args[k]));
+
+if (totalMatches === 0 && !has(args.stock_id) && narrowing.length > 0) {
+  spoken =
+    'Nothing matches those exact filters (' + narrowing.join(', ') + '). Do not go to ' +
+    'sourcing yet. Search again more broadly - drop the year and price limits, or search ' +
+    'the make alone, or the body type alone - and offer the caller the closest vehicles ' +
+    'we do have. Only offer sourcing if the broader search also finds nothing suitable, ' +
+    'or the caller says none of the alternatives will do.';
+} else if (totalMatches === 0) {
   spoken =
     'No vehicles in the published stock list match that. Tell the caller honestly that ' +
     'nothing listed matches right now, mention we hold over twelve thousand vehicles ' +

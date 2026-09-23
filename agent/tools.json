@@ -2,7 +2,7 @@
   {
     "type": "custom",
     "name": "search_inventory",
-    "description": "Search the live NS Japan Autos stock list for vehicles matching what the caller asked for. Call this whenever the caller mentions a make, model, body type, budget, year or asks what is available. Only pass the filters the caller actually gave you - omit everything else. Returns matching vehicles with year, make, model, price in US dollars, mileage, transmission, fuel, colour, steering and stock number.",
+    "description": "Search the live NS Japan Autos stock list for vehicles matching what the caller asked for. Call this whenever the caller mentions a make, model, body type, budget, year or asks what is available, and call it again as the caller narrows down or when a narrow search finds nothing and needs widening. Only pass the filters the caller actually gave you - omit everything else. Returns matching vehicles with year, make, model, price in US dollars, mileage, transmission, fuel, colour, steering and stock number.",
     "url": "{{N8N_BASE_URL}}/webhook/nsjapan-inventory-search",
     "method": "POST",
     "parameter_type": "json",
@@ -21,7 +21,7 @@
         },
         "model": {
           "type": "string",
-          "description": "Model name, for example ALPHARD, FORESTER, LAND CRUISER PRADO, HIACE VAN, MARK X, RAV4, PREMIO, NOAH. Partial names are matched. Omit if not given."
+          "description": "Model name, for example ALPHARD, FORESTER, LAND CRUISER PRADO, HIACE VAN, MARK X, RAV4, PREMIO, NOAH. Partial names are matched, and export names map to Japanese ones (COROLLA finds FIELDER and AXIO, YARIS finds VITZ, JAZZ finds FIT). Omit if not given."
         },
         "body_type": {
           "type": "string",

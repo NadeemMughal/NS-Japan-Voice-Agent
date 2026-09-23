@@ -126,12 +126,16 @@ def respond_node(name, pos, body_expr):
 
 def http_node(name, pos, url, method="GET", body_expr=None, headers=None,
               use_header_auth=False, on_error=None, timeout_ms=15000,
-              full_response=False):
+              full_response=False, force_json=False):
     params = {
         "method": method,
         "url": url,
         "options": {"timeout": timeout_ms},
     }
+    if force_json:
+        # raw.githubusercontent.com serves .json as text/plain, and n8n's autodetect
+        # then hands back {data: "<string>"} instead of the parsed object.
+        params["options"]["response"] = {"response": {"responseFormat": "json"}}
     if full_response:
         # Keep the status code and body instead of throwing, so a 401 or 422 from the
         # CRM can be reported precisely rather than surfacing as an empty error object.
@@ -205,6 +209,7 @@ def build_inventory():
             # Short, because a caller is waiting in silence. Fetching a static JSON
             # file takes well under a second when the host is healthy.
             timeout_ms=8000,
+            force_json=True,
         ),
         code_node("Filter Stock", [420, 0], read_js("inventory_filter.js")),
         respond_node("Respond to Retell", [640, 0], "={{ JSON.stringify($json) }}"),

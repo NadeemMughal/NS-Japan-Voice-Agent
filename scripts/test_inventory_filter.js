@@ -165,5 +165,32 @@ check('malformed snapshot is handled like an outage', r.ok === false);
 r = runFilter({ make: 'TOYOTA' });
 check('healthy snapshot reports ok', r.ok === true);
 
+// 23. GitHub raw serves text/plain, so n8n may hand over an unparsed string
+r = runFilter({ make: 'MERCEDES BENZ', model: 'E-CLASS', year_min: 2010, year_max: 2010 },
+  { data: JSON.stringify(snapshot) });
+check('text/plain snapshot is parsed, not treated as an outage',
+  r.ok === true && r.total_matches > 0, JSON.stringify(r.error || r.total_matches));
+
+// 24. Spoken spellings of the make and model still match the site's spelling
+r = runFilter({ make: 'Mercedes-Benz', model: 'E Class' });
+check('"Mercedes-Benz" / "E Class" finds the E-Class stock',
+  r.total_matches > 0 && r.vehicles.every((v) => v.model.startsWith('E-CLASS')), String(r.total_matches));
+r = runFilter({ keyword: 'mercedes-benz e-class' });
+check('hyphenated keyword finds the E-Class stock', r.total_matches > 0, String(r.total_matches));
+
+// 25. Export model names find their Japanese-market siblings
+r = runFilter({ make: 'Toyota', model: 'Corolla' });
+check('"Corolla" finds Fielder / Rumion stock',
+  r.total_matches > 0 && r.vehicles.every((v) => /FIELDER|AXIO|RUMION|SPACIO|RUNX|ALLEX|COROLLA/.test(v.model)),
+  r.vehicles.map((v) => v.model).join(','));
+r = runFilter({ keyword: 'toyota corolla' });
+check('"corolla" keyword finds Fielder / Rumion stock', r.total_matches > 0, String(r.total_matches));
+
+// 26. A miss on narrow filters asks for a wider search before sourcing
+r = runFilter({ make: 'LEXUS', model: 'IS', year_min: 2015 });
+check('narrow miss tells the agent to widen the search first',
+  r.total_matches === 0 && /search again more broadly/i.test(r.summary_for_agent), r.summary_for_agent);
+check('narrow miss names the filters to relax', /year_min/.test(r.summary_for_agent));
+
 console.log(`\n--- ${pass} passed, ${fail} failed ---\n`);
 if (fail > 0) process.exit(1);

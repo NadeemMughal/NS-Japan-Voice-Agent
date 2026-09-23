@@ -328,6 +328,19 @@ TOOLS = [
     ("specific stock number lookup",
      ["Do you still have stock number NS10632?"],
      [("responds about that vehicle", any_of("alphard", "ns10632", "10632", "check"))]),
+
+    # A bare make should lead to stock and a narrowing question, not a lead form.
+    ("vague make is narrowed from stock, not sent to lead capture",
+     ["Do you have a Lexus?"],
+     [("quotes a real Lexus price from stock", matches(r"(thousand|\$\s?\d)")),
+      ("does not jump to taking details", absent("your name", "your email", "email address",
+                                                 "phone number"))]),
+
+    # The site lists Corollas under their Japanese names.
+    ("Corolla request finds Fielder / Rumion stock",
+     ["I want a Toyota Corolla."],
+     [("offers a Corolla-family car from stock", any_of("fielder", "rumion", "axio")),
+      ("does not jump to sourcing", absent("source it for you", "your name", "your email"))]),
 ]
 
 # The website and the model's own prior both want to append a timezone to the office
